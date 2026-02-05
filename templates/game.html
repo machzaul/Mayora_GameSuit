@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fortune Hands</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<style>
+    header {
+      position: relative;
+      text-align: center;
+      align-items: center;
+      display: grid;
+      justify-items: center;
+      flex: 0 0 20%;
+      padding-top: 15%;
+    }
+    
+    .circular-frame-game {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 80%;
+    height: 80%;
+    max-width: 80vmin;
+    max-height: 80vmin;
+
+    background: url('static/assets/circular-frame.png') no-repeat center center;
+    background-size: contain;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 5;
+    }
+
+
+    .round-image {
+      width: 100%;
+      height: auto;
+    }
+    .won-counter {
+      width: 100%;
+      height: auto;
+    }
+    .user-preview-container {
+    position: absolute;
+    bottom: 15px;   /* Lebih dekat ke sudut */
+    right: 15px;    /* Lebih dekat ke sudut */
+    width: 30%;   /* Ukuran lebih kecil */
+    height: 23%;  /* Ukuran lebih kecil */
+    }
+    .user-frame {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+    .video-feed {
+      position: absolute;
+      top: 12px;    /* Sesuaikan posisi agar pas di dalam frame */
+      left: 12px;   /* Sesuaikan posisi agar pas di dalam frame */
+      width: 90%; /* Sesuaikan ukuran agar pas di dalam frame */
+      height: 95%;/* Sesuaikan ukuran agar pas di dalam frame */
+      border-radius: 150px 150px 0px 0px;
+      border: 3px solid #fff;
+      outline: 2px solid #fff;
+      outline-offset: 4px;
+      z-index: 1;
+    }
+    /* Prompt Overlay Images */
+    .prompt-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0s ease;
+    }
+
+    .prompt-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    animation: fadeIn 1s ease;
+    }
+
+    .prompt-image.be-ready {
+    animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+    }
+
+    /* COUNTDOWN OVERLAY */
+    .countdown-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    pointer-events: none;
+    }
+
+    .countdown-img {
+    max-width: 100%;
+    height: auto;
+    animation: scalePop 0.8s ease;
+    }
+
+    @keyframes scalePop {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+    }
+
+    /* RESULT OVERLAY */
+    .result-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 300;
+    }
+
+    .result-image {
+      max-width: 100%;
+      height: auto;
+      animation: scalePop 0.8s ease;
+    }
+
+
+    
+    
+</style>
+<body>
+  <div class="container">
+    <header>
+      <img src="{{ url_for('static', filename='assets/round' ~ round ~ round ~ '.png') }}" alt="Round {{ round }}" class="round-image" id="roundImage">
+      <img src="{{ url_for('static', filename='assets/won' ~ wins ~ '-3.png') }}" alt="Won {{ wins }}/3" class="won-counter" id="wonCounter">
+    </header>
+    
+    <main>
+    </main>
+    
+    <footer>
+      <div class="user-preview-container">
+        <img src="{{ url_for('video_feed') }}" class="video-feed" id="videoFeed">
+      </div>
+    </footer>
+    
+    <div class="circular-frame-game">
+      </div>
+  </div>
+    <div class="prompt-overlay">
+        
+        <img src="{{ url_for('static', filename='assets/show-hand.png') }}" alt="Show hand to camera" class="prompt-image" id="showHandPrompt">
+        <img src="{{ url_for('static', filename='assets/be-ready.png') }}" alt="Be ready" class="prompt-image be-ready" id="beReadyPrompt" style="display:none;">
+    </div>
+    <!-- Tambahkan DI MANA SAJA di dalam body (bisa di luar container) -->
+    <div id="hand-overlay" 
+        style="display:none; 
+                position:absolute; 
+                width:50px; 
+                height:50px; 
+                background:rgba(255,215,0,0.5); 
+                border-radius:50%; 
+                transform:translate(-50%,-50%); 
+                z-index:20;">
+    </div>
+
+    <!-- COUNTDOWN OVERLAY (TANPA BACKGROUND GELAP) -->
+    <div class="countdown-overlay" id="countdownOverlay" style="display:none;">
+        <img src="{{ url_for('static', filename='assets/countdown1.png') }}" class="countdown-img" id="count3">
+        <img src="{{ url_for('static', filename='assets/countdown2.png') }}" class="countdown-img" id="count2" style="display:none;">
+        <img src="{{ url_for('static', filename='assets/countdown3.png') }}" class="countdown-img" id="count1" style="display:none;">
+    </div>
+
+    <div class="result-overlay" id="resultOverlay" style="display:none;">
+      <img id="resultImage" class="result-image">
+    </div>
+
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    let promptChanged = false;
+    let gameStarted = false;
+    let userGesture = null;
+    let handDetectionAttempts = 0;
+    const MAX_DETECTION_ATTEMPTS = 3;
+    let cameraReady = false;
+
+        const videoImg = document.getElementById('videoFeed');
+
+    videoImg.onload = () => {
+        if (!cameraReady) {
+            cameraReady = true;
+            console.log('✅ Kamera aktif & stream jalan');
+        }
+    };
+
+    videoImg.onerror = () => {
+        console.error('❌ Kamera tidak bisa diakses');
+        alert('Kamera tidak terdeteksi.\nPastikan kamera tidak digunakan aplikasi lain.');
+    };
+
+    // START TRACKING
+    fetch('/api/start-tracking', { method: 'POST' });
+
+    // DETECT HAND → BE READY (dengan retry mechanism)
+    const handDetectionInterval = setInterval(async () => {
+
+    // 🚫 STOP kalau kamera belum siap
+    if (!cameraReady) {
+        console.log('⏳ Menunggu kamera siap...');
+        return;
+    }
+
+    if (promptChanged) return;
+
+    try {
+        const res = await fetch('/api/hand-data');
+        const data = await res.json();
+
+        console.log('HAND DATA:', data);
+
+        // ✅ VALIDASI LENGKAP & AMAN
+        if (
+            data.detected === true &&
+            data.gesture !== 'none' &&
+            data.gesture !== 'unknown'
+        ) {
+            promptChanged = true;
+            clearInterval(handDetectionInterval);
+
+            console.log('✋ Tangan terdeteksi → BE READY');
+
+            document.getElementById('showHandPrompt').style.display = 'none';
+            document.getElementById('beReadyPrompt').style.display = 'block';
+
+            setTimeout(() => {
+                document.querySelector('.prompt-overlay').style.display = 'none';
+                startCountdown();
+            }, 1500);
+        }
+
+        } catch (error) {
+            console.error('Error detecting hand:', error);
+        }
+
+    }, 200);  // Check setiap 200ms untuk respons lebih cepat
+
+
+    // COUNTDOWN
+    function startCountdown() {
+    const overlay = document.getElementById('countdownOverlay');
+    const imgs = ['count3', 'count2', 'count1'];
+
+    overlay.style.display = 'flex';
+
+    imgs.forEach((id, i) => {
+        setTimeout(() => {
+        imgs.forEach(x => document.getElementById(x).style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        }, i * 800);
+    });
+
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        lockUserGesture();
+    }, 2400);
+    }
+
+
+    // LOCK USER GESTURE (dengan validasi lebih baik)
+    async function lockUserGesture() {
+    if (gameStarted) return;
+    gameStarted = true;
+
+    // Tunggu sedikit untuk memastikan gesture stabil
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const res = await fetch('/api/hand-data');
+    const data = await res.json();
+
+    if (!data.detected || data.gesture === 'unknown' || data.gesture === 'none') {
+        alert('Gesture tidak terbaca dengan jelas. Silakan ulangi!\n\nTips:\n- Pastikan tangan jelas terlihat kamera\n- Buat gesture yang jelas (Rock/Paper/Scissors)');
+        location.reload();
+        return;
+    }
+
+    userGesture = data.gesture;
+    console.log('User gesture locked:', userGesture);
+    startCpuTurn();
+    }
+
+
+    // CPU TURN
+    function startCpuTurn() {
+    const choices = ['rock', 'paper', 'scissors'];
+    const cpuGesture = choices[Math.floor(Math.random() * 3)];
+
+    console.log('CPU gesture:', cpuGesture);
+    showCpuGesture(cpuGesture);
+    judge(userGesture, cpuGesture);
+    }
+
+
+    // SHOW CPU IMAGE
+    function showCpuGesture(gesture) {
+    const frame = document.querySelector('.circular-frame-game');
+
+    const imgMap = {
+        rock: 'static/assets/rock.png',
+        paper: 'static/assets/paper.png',
+        scissors: 'static/assets/scissors.png'
+    };
+
+    frame.style.background = `url('${imgMap[gesture]}') no-repeat center`;
+    frame.style.backgroundSize = 'contain';
+    }
+
+
+    // JUDGE RESULT
+    function judge(user, cpu) {
+    let result = 'SERI';
+
+    if (
+        (user === 'rock' && cpu === 'scissors') ||
+        (user === 'scissors' && cpu === 'paper') ||
+        (user === 'paper' && cpu === 'rock')
+    ) {
+        result = 'MENANG';
+    }
+    else if (user !== cpu) {
+        result = 'KALAH';
+    }
+
+    console.log('Result:', result);
+
+    setTimeout(() => {
+        showResult(result);
+    }, 500);
+    }
+
+    async function showResult(result) {
+      const overlay = document.getElementById('resultOverlay');
+      const img = document.getElementById('resultImage');
+
+      const imgMap = {
+        MENANG: 'static/assets/result-win.png',
+        KALAH: 'static/assets/result-lose.png',
+        SERI: 'static/assets/result-draw.png'
+      };
+
+      img.src = imgMap[result];
+      overlay.style.display = 'flex';
+
+      // Kirim hasil ke server
+      try {
+        const response = await fetch('/api/game-result', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ result: result })
+        });
+
+        const data = await response.json();
+
+        setTimeout(() => {
+          if (data.status === 'game_over') {
+            // Game selesai (menang 3x atau kalah 3x)
+            if (result === 'MENANG') {
+              window.location.href = '/win';
+            } else if (result === 'KALAH') {
+              window.location.href = '/lose';
+            }  // Kembali ke menu utama
+          } else if (result === 'SERI') {
+            // Seri, ulangi round yang sama
+            location.reload();
+          } else {
+            // Lanjut ke round berikutnya
+            window.location.href = '/round';
+          }
+        }, 2500);
+
+      } catch (error) {
+        console.error('Error sending result:', error);
+        // Fallback jika error
+        setTimeout(() => {
+          if (result === 'SERI') {
+            location.reload();
+          } else {
+            window.location.href = '/round';
+          }
+        }, 2500);
+      }
+    }
+
+    </script>
+</body>
+</html>

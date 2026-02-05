@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading - Fortune Hands</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="loading-container">
+    <div class="loading-content">
+      <p>Is fortune on your side? Get ready!</p>
+
+      <div class="progress-wrapper">
+        <div class="progress-background"></div>
+
+        <!-- AREA DALAM (ADA JARAK) -->
+        <div class="progress-inner">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <p class="loading-percentage" id="loadingPercentage">Loading 0%...</p>
+    </div>
+  </div>
+
+  <script>
+    // Simulate loading progress
+    let progress = 0;
+    const progressFill = document.getElementById('progressFill');
+    const loadingPercentage = document.getElementById('loadingPercentage');
+    
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 2) + 1;
+      if (progress > 100) progress = 100;
+      
+      progressFill.style.width = `${progress}%`;
+      loadingPercentage.textContent = `Loading ${progress}%...`;
+      
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          window.location.href = '/round';
+        }, 500);
+      }
+    }, 300);
+  </script>
+</body>
+</html>

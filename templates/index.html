@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fortune Hands</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="{{ url_for('static', filename='assets/title.png') }}" alt="Fortune Hands" class="title">
+    </header>
+    
+    <main>
+      <div class="circular-frame">
+      </div>
+    </main>
+    
+    <footer>
+      <img src="{{ url_for('static', filename='assets/tap-anywhere.png') }}" alt="Tap to start" class="tap-text" id="tapStart">
+    </footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

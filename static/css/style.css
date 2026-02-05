@@ -1,0 +1,419 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: 'Shippori Antique';
+  src: url('../assets/fonts/ShipporiAntique-Regular.ttf') format('truetype');
+}
+
+
+body {
+  height: 100vh;
+  background: url('../assets/bg.png') no-repeat center center;
+  background-size: cover;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Shippori Antique', serif;
+}
+
+/* 9:16 Aspect Ratio Container */
+.container {
+  position: relative;
+  width: 90vw;
+  max-width: calc(90vh * 9 / 16);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+}
+
+header {
+  flex: 0 0 20%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20%;
+}
+
+.title {
+  max-width: 60%;
+  height: auto;
+  animation: float 3s ease-in-out infinite;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.circular-frame {
+  width: 80%;
+  height: 80%;
+  background: url('../assets/content-frame.png') no-repeat center center;
+  background-size: contain;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.placeholder-text {
+  color: white;
+  font-size: 2em;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+.video-feed {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.hand-overlay {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 215, 0, 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+.gesture-indicator {
+  position: absolute;
+  bottom: 20%;
+  color: white;
+  font-size: 1.5em;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  display: none;
+  animation: pulse 1s infinite;
+}
+
+footer {
+  flex: 0 0 10%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 5%;
+}
+
+.tap-text {
+  max-width: 60%;
+  height: auto;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.tap-text:hover {
+  transform: scale(1.05);
+}
+
+.game-controls {
+  display: flex;
+  gap: 20px;
+}
+
+.btn-back,
+.btn-stop {
+  padding: 10px 20px;
+  font-size: 1em;
+  background: rgba(255, 215, 0, 0.8);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-back:hover,
+.btn-stop:hover {
+  transform: scale(1.1);
+  background: rgba(255, 215, 0, 1);
+}
+
+/* Loading Screen Styles */
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  flex-wrap: wrap;
+  z-index: 1000;
+}
+
+.loading-content {
+  text-align: center;
+  padding: 20px;
+  max-width: 100%;
+  width: 80%;
+  height: 40%;
+  align-content: center;
+}
+
+.loading-content p{
+  color: white;
+  font-family: 'Shippori Antique', serif;
+  font-size: 2.5em;
+  margin-bottom: 30px;
+}
+
+.progress-wrapper {
+  position: relative;
+  width: 100%;
+  height: 41px;          /* lebih stabil dari % */
+  margin: 20px 0;
+}
+
+.progress-background {
+  width: 100%;
+  height: 100%;
+  background: url('../assets/Loading-bg2.png') no-repeat center center;
+  background-size: contain;
+}
+
+/* AREA DALAM → NGASIH JARAK KIRI KANAN */
+.progress-inner {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* FILL */
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: url('../assets/progress-bar-gold1.png') no-repeat center center;
+  background-size: 100% 55%;
+  transition: width 0.3s ease;
+}
+
+
+.loading-percentage {
+  color: white;
+  font-family: 'Shippori Antique', serif;
+  font-size: 2.2em;
+  margin-top: 15px;
+}
+
+/* Animations */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .container {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .title {
+    max-width: 80%;
+  }
+  
+  .tap-text {
+    max-width: 80%;
+  }
+  
+  .loading-content h1 {
+    font-size: 1.4em;
+  }
+  
+  .loading-percentage {
+    font-size: 1.2em;
+  }
+}
+
+/* Round Screen Styles */
+.round-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.round-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.round-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.round-image {
+  max-width: 80%;
+  height: auto;
+  animation: fadeIn 1.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+   transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+/* Transisi halus saat berpindah layar */
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.round-image {
+  animation: slideIn 0.8s ease-out;
+}
+
+/* ===== YOU WIN SCREEN ===== */
+
+.win-container {
+  position: fixed;
+  inset: 0;
+  background: url('../assets/bg.png') no-repeat center center;
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  z-index: 3000;
+}
+
+.win-content {
+  position: relative;
+  width: 95%;
+  height: 95%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Panel utama */
+.win-panel {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Icon lingkaran tangan */
+.win-icon {
+  position: absolute;
+  top: 23%;
+  width: 55%;
+  height: auto;
+  z-index: 2;
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Tombol Collect */
+.collect-btn {
+  position: absolute;
+  bottom: 7%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+}
+
+.collect-btn img {
+  width: 95%;
+  height: auto;
+  transition: transform 0.2s ease;
+}
+
+.collect-btn:hover img {
+  transform: scale(1.08);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Mobile tweak */
+@media (max-width: 480px) {
+  .win-icon {
+    width: 95px;
+    top: 22%;
+  }
+
+  .collect-btn img {
+    width: 180px;
+  }
+}

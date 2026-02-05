@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Round - Fortune Hands</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="round-container">
+    <div class="round-overlay"></div>
+    <div class="round-content">
+      <img src="{{ url_for('static', filename='assets/round' ~ round ~ '.png') }}" alt="Round {{ round }}" class="round-image">
+    </div>
+  </div>
+
+  <script>
+    // Auto-redirect to game after 2 seconds
+    setTimeout(() => {
+      window.location.href = '/game';
+    }, 2000);
+  </script>
+</body>
+</html>
