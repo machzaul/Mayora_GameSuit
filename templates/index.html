@@ -22,6 +22,24 @@
     </footer>
   </div>
 
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
+  <script>
+    function navigate(path) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'nav', url: path }, '*');
+      } else {
+        window.location.href = path;
+      }
+    }
+
+    // Enable audio and play click sound on tap
+    document.body.addEventListener('click', function() {
+      audioManager.enableAudio();
+      
+      setTimeout(() => {
+        navigate('/loading');
+      }, 200);
+    }, { once: true });
+  </script>
 </body>
 </html>

@@ -14,10 +14,22 @@
     </div>
   </div>
 
+  <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
+    // Play paper scroll sound when round page loads
+    audioManager.play('paperScroll');
+
+    function navigate(path) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'nav', url: path }, '*');
+      } else {
+        window.location.href = path;
+      }
+    }
+
     // Auto-redirect to game after 2 seconds
     setTimeout(() => {
-      window.location.href = '/game';
+      navigate('/game');
     }, 2000);
   </script>
 </body>

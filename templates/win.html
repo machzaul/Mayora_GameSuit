@@ -35,9 +35,24 @@
 
     </div>
   </div>
+
+  <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
+    // Play you-win sound when page loads
+    audioManager.play('youWin');
+
+    function navigate(path) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'nav', url: path }, '*');
+      } else {
+        window.location.href = path;
+      }
+    }
+
     function goHome() {
-      window.location.href = '/';
+      setTimeout(() => {
+        navigate('/screen/index');
+      }, 200);
     }
   </script>
 </body>

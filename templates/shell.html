@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fortune Hands</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+    }
+    .shell-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="audioUnlockOverlay" aria-label="Start" role="button"
+    style="position:fixed; inset:0; background:transparent; z-index:10;"></div>
+  <iframe id="shellFrame" class="shell-frame" title="Fortune Hands"></iframe>
+
+  <script src="{{ url_for('static', filename='js/audio-manager.js') }}"></script>
+  <script>
+    const frame = document.getElementById('shellFrame');
+    const overlay = document.getElementById('audioUnlockOverlay');
+
+    function withEmbedParam(path) {
+      const sep = path.includes('?') ? '&' : '?';
+      return `${path}${sep}embed=1`;
+    }
+
+    function navigateTo(path) {
+      frame.src = withEmbedParam(path);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const initial = params.get('screen') || '/screen/index';
+    navigateTo(initial);
+
+    overlay.addEventListener('click', () => {
+      audioManager.enableAudio();
+      audioManager.play('click');
+      overlay.style.display = 'none';
+    }, { once: true });
+
+    window.addEventListener('message', (event) => {
+      const data = event.data || {};
+      if (data.type === 'nav' && data.url) {
+        navigateTo(data.url);
+      }
+    });
+  </script>
+</body>
+</html>

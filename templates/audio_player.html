@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Player</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hidden audio player iframe -->
+  <audio id="bgm" loop preload="auto">
+    <source src="{{ url_for('static', filename='assets/sound/bgm-fortune-hands.mp3') }}" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const bgm = document.getElementById('bgm');
+    bgm.volume = 0.3; // 30% volume
+    let isPlaying = false;
+
+    // Listen for commands from parent window
+    window.addEventListener('message', function(event) {
+      const command = event.data;
+      
+      console.log('🎵 Audio Player received command:', command);
+
+      switch(command.type) {
+        case 'PLAY_BGM':
+          if (!isPlaying) {
+            bgm.play().then(() => {
+              isPlaying = true;
+              console.log('🎵 BGM started');
+              notifyParent('BGM_PLAYING');
+            }).catch(err => {
+              console.error('❌ Could not play BGM:', err);
+              notifyParent('BGM_ERROR', err.message);
+            });
+          }
+          break;
+
+        case 'STOP_BGM':
+          bgm.pause();
+          isPlaying = false;
+          console.log('🎵 BGM stopped');
+          notifyParent('BGM_STOPPED');
+          break;
+
+        case 'SET_VOLUME':
+          bgm.volume = command.value || 0.3;
+          console.log('🎵 Volume set to:', bgm.volume);
+          notifyParent('VOLUME_CHANGED', bgm.volume);
+          break;
+
+        case 'GET_STATUS':
+          notifyParent('STATUS', {
+            playing: isPlaying,
+            currentTime: bgm.currentTime,
+            duration: bgm.duration,
+            volume: bgm.volume
+          });
+          break;
+      }
+    });
+
+    // Notify parent window about events
+    function notifyParent(type, data = null) {
+      if (window.parent) {
+        window.parent.postMessage({
+          source: 'audio-player',
+          type: type,
+          data: data
+        }, '*');
+      }
+    }
+
+    // Auto-notify when BGM ends (though it loops)
+    bgm.addEventListener('ended', function() {
+      isPlaying = false;
+      notifyParent('BGM_ENDED');
+    });
+
+    // Notify when BGM starts playing
+    bgm.addEventListener('play', function() {
+      isPlaying = true;
+      notifyParent('BGM_PLAYING');
+    });
+
+    // Notify when BGM is paused
+    bgm.addEventListener('pause', function() {
+      isPlaying = false;
+      notifyParent('BGM_PAUSED');
+    });
+
+    // Notify when BGM has an error
+    bgm.addEventListener('error', function(e) {
+      console.error('❌ BGM Error:', e);
+      notifyParent('BGM_ERROR', e.message);
+    });
+
+    // Notify parent that audio player is ready
+    window.addEventListener('load', function() {
+      console.log('🎵 Audio Player ready');
+      notifyParent('AUDIO_PLAYER_READY');
+    });
+
+    console.log('🎵 Audio Player iframe loaded');
+  </script>
+</body>
+</html>

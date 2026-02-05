@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, session, redirect, url_for
+from flask import Flask, render_template, jsonify, session, redirect, url_for, request
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -162,18 +162,29 @@ def generate_frames():
 # ================= ROUTES =================
 @app.route('/')
 def index():
+    return render_template('shell.html')
+
+
+def render_screen(template_name, **context):
+    if request.args.get('embed') == '1':
+        return render_template(template_name, **context)
+    return redirect(url_for('index', screen=request.path))
+
+
+@app.route('/screen/index')
+def screen_index():
     # Reset game state
     session['current_round'] = 1
     session['wins'] = 0
     session['losses'] = 0
-    return render_template('index.html')
+    return render_screen('index.html')
 
 
 @app.route('/round')
 def round_page():
     """Round page with transition effect"""
     current_round = session.get('current_round', 1)
-    return render_template('round.html', round=current_round)
+    return render_screen('round.html', round=current_round)
 
 
 @app.route('/game')
@@ -187,7 +198,7 @@ def game():
     gesture_buffer.clear()
     detection_buffer.clear()
     
-    return render_template('game.html', round=current_round, wins=wins)
+    return render_screen('game.html', round=current_round, wins=wins)
 
 
 @app.route('/video_feed')
@@ -260,21 +271,25 @@ def game_result():
         "losses": losses
     })
 
-
 @app.route('/loading')
 def loading():
     """Loading page"""
-    return render_template('loading.html')
+    return render_screen('loading.html')
 
 @app.route('/win')
 def win():
     """win page"""
-    return render_template('win.html')
+    return render_screen('win.html')
 
 @app.route('/lose')
 def lose():
     """win page"""
-    return render_template('lose.html')
+    return render_screen('lose.html')
+
+@app.route('/audio-player')
+def audio_player():
+    """Audio player iframe - loads once and never reloads"""
+    return render_template('audio_player.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

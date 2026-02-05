@@ -1,20 +1,27 @@
 document.addEventListener('DOMContentLoaded', function() {
   const tapStart = document.getElementById('tapStart');
-  
-  if (tapStart) {
-    tapStart.addEventListener('click', function() {
-      // Play click sound if available
-      const clickSound = new Audio('/static/assets/click.wav');
-      clickSound.play().catch(e => console.log('Audio autoplay prevented'));
-      
-      // Show loading page
-      window.location.href = '/loading';
-    });
-    
-    // Also allow tap on main container
-    document.querySelector('.container').addEventListener('click', function(e) {
+  if (!tapStart) return;
+
+  function navigate(path) {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'nav', url: path }, '*');
+    } else {
+      window.location.href = path;
+    }
+  }
+
+  tapStart.addEventListener('click', function() {
+    if (window.audioManager && window.audioManager.enableAudio) {
+      window.audioManager.enableAudio();
+    }
+    navigate('/loading');
+  });
+
+  const container = document.querySelector('.container');
+  if (container) {
+    container.addEventListener('click', function(e) {
       if (e.target !== tapStart && tapStart.contains(e.target) === false) {
-        window.location.href = '/loading';
+        navigate('/loading');
       }
     });
   }

@@ -204,8 +204,16 @@
     </div>
 
 
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
+    function navigate(path) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'nav', url: path }, '*');
+      } else {
+        window.location.href = path;
+      }
+    }
+
     let promptChanged = false;
     let gameStarted = false;
     let userGesture = null;
@@ -213,7 +221,7 @@
     const MAX_DETECTION_ATTEMPTS = 3;
     let cameraReady = false;
 
-        const videoImg = document.getElementById('videoFeed');
+    const videoImg = document.getElementById('videoFeed');
 
     videoImg.onload = () => {
         if (!cameraReady) {
@@ -258,6 +266,9 @@
 
             console.log('✋ Tangan terdeteksi → BE READY');
 
+            // Play hand detected sound
+            audioManager.play('handDetected');
+
             document.getElementById('showHandPrompt').style.display = 'none';
             document.getElementById('beReadyPrompt').style.display = 'block';
 
@@ -281,17 +292,20 @@
 
     overlay.style.display = 'flex';
 
+    // Play countdown sound
+
     imgs.forEach((id, i) => {
         setTimeout(() => {
         imgs.forEach(x => document.getElementById(x).style.display = 'none');
         document.getElementById(id).style.display = 'block';
-        }, i * 800);
+        audioManager.play('countdown');
+        }, i * 1200);
     });
 
     setTimeout(() => {
         overlay.style.display = 'none';
         lockUserGesture();
-    }, 2400);
+    }, 3400);
     }
 
 
@@ -379,6 +393,15 @@
       img.src = imgMap[result];
       overlay.style.display = 'flex';
 
+      // Play result sound based on outcome
+      if (result === 'MENANG') {
+        audioManager.play('win');
+      } else if (result === 'KALAH') {
+        audioManager.play('lose');
+      } else if (result === 'SERI') {
+        audioManager.play('draw');
+      }
+
       // Kirim hasil ke server
       try {
         const response = await fetch('/api/game-result', {
@@ -395,16 +418,16 @@
           if (data.status === 'game_over') {
             // Game selesai (menang 3x atau kalah 3x)
             if (result === 'MENANG') {
-              window.location.href = '/win';
+              navigate('/win');
             } else if (result === 'KALAH') {
-              window.location.href = '/lose';
+              navigate('/lose');
             }  // Kembali ke menu utama
           } else if (result === 'SERI') {
             // Seri, ulangi round yang sama
             location.reload();
           } else {
             // Lanjut ke round berikutnya
-            window.location.href = '/round';
+            navigate('/round');
           }
         }, 2500);
 
@@ -415,7 +438,7 @@
           if (result === 'SERI') {
             location.reload();
           } else {
-            window.location.href = '/round';
+            navigate('/round');
           }
         }, 2500);
       }

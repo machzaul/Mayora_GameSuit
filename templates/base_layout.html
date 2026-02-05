@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Fortune Hands{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- HIDDEN AUDIO PLAYER IFRAME - NEVER RELOADS -->
+  <iframe 
+    id="audio-player-frame" 
+    src="{{ url_for('audio_player') }}"
+    style="display: none; width: 0; height: 0; border: none;"
+    allow="autoplay">
+  </iframe>
+
+  <!-- MAIN CONTENT -->
+  {% block content %}{% endblock %}
+
+  <!-- AUDIO CONTROLLER -->
+  <script src="{{ url_for('static', filename='js/audio-controller.js') }}"></script>
+  
+  <!-- PAGE-SPECIFIC SCRIPTS -->
+  {% block scripts %}{% endblock %}
+</body>
+</html>

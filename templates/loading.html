@@ -24,14 +24,19 @@
     </div>
   </div>
 
+  <script src="{{ url_for('static', filename='js/audio-manager.js') }}"></script>
   <script>
+    // Initialize audio manager
+    audioManager.init();
+    audioManager.playBGM();
+
     // Simulate loading progress
     let progress = 0;
     const progressFill = document.getElementById('progressFill');
     const loadingPercentage = document.getElementById('loadingPercentage');
     
     const interval = setInterval(() => {
-      progress += Math.floor(Math.random() * 2) + 1;
+      progress += Math.floor(Math.random() * 100) + 1;
       if (progress > 100) progress = 100;
       
       progressFill.style.width = `${progress}%`;
