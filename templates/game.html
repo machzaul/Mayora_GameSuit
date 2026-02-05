@@ -147,7 +147,7 @@
     }
 
     .result-image {
-      max-width: 100%;
+      max-width: 50%;
       height: auto;
       animation: scalePop 0.8s ease;
     }
@@ -202,6 +202,12 @@
     <div class="result-overlay" id="resultOverlay" style="display:none;">
       <img id="resultImage" class="result-image">
     </div>
+    
+    <div class="result-overlay" id="failOverlay" style="display:none;">
+      <img src="{{ url_for('static', filename='assets/Pop up.png') }}" 
+          class="result-image">
+    </div>
+
 
 
   <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
@@ -284,6 +290,18 @@
 
     }, 200);  // Check setiap 200ms untuk respons lebih cepat
 
+    function handleDetectionFail() {
+      const overlay = document.getElementById('failOverlay');
+      overlay.style.display = 'flex';
+
+      audioManager.play('draw'); // atau sound khusus error
+
+      // balik otomatis ke halaman awal
+      setTimeout(() => {
+        location.reload();
+      }, 2500);
+    }
+
 
     // COUNTDOWN
     function startCountdown() {
@@ -311,25 +329,28 @@
 
     // LOCK USER GESTURE (dengan validasi lebih baik)
     async function lockUserGesture() {
-    if (gameStarted) return;
-    gameStarted = true;
+      if (gameStarted) return;
+      gameStarted = true;
 
-    // Tunggu sedikit untuk memastikan gesture stabil
-    await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-    const res = await fetch('/api/hand-data');
-    const data = await res.json();
+      const res = await fetch('/api/hand-data');
+      const data = await res.json();
 
-    if (!data.detected || data.gesture === 'unknown' || data.gesture === 'none') {
-        alert('Gesture tidak terbaca dengan jelas. Silakan ulangi!\n\nTips:\n- Pastikan tangan jelas terlihat kamera\n- Buat gesture yang jelas (Rock/Paper/Scissors)');
-        location.reload();
+      if (
+        !data.detected ||
+        data.gesture === 'unknown' ||
+        data.gesture === 'none'
+      ) {
+        handleDetectionFail();
         return;
+      }
+
+      userGesture = data.gesture;
+      console.log('User gesture locked:', userGesture);
+      startCpuTurn();
     }
 
-    userGesture = data.gesture;
-    console.log('User gesture locked:', userGesture);
-    startCpuTurn();
-    }
 
 
     // CPU TURN

@@ -44,7 +44,6 @@ header {
 .title {
   max-width: 60%;
   height: auto;
-  animation: float 3s ease-in-out infinite;
 }
 
 main {
