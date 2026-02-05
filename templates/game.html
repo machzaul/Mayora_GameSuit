@@ -167,6 +167,19 @@
       animation: scalePop 0.8s ease;
     }
 
+    .round-overlay {
+      background:
+        linear-gradient(
+          rgba(0, 0, 0, 0.45),
+          rgba(0, 0, 0, 0.45)
+        ),
+        url("{{ url_for('static', filename='assets/bg.png') }}") no-repeat center center;
+
+      background-size: cover;
+    }
+
+
+
 
     
     
@@ -218,9 +231,15 @@
       <img id="resultImage" class="result-image">
     </div>
     
-    <div class="result-overlayy" id="failOverlayy" style="display:none;">
+    <div class="result-overlayy" id="failOverlay" style="display:none;">
       <img src="{{ url_for('static', filename='assets/Pop up.png') }}" 
           class="result-imagee">
+    </div>
+
+    <!-- ROUND OVERLAY (gabungan round.html) -->
+    <div class="result-overlay round-overlay" id="roundOverlay" style="display:flex;">
+      <img src="{{ url_for('static', filename='assets/round' ~ round ~ '.png') }}"
+           alt="Round {{ round }}" class="result-image">
     </div>
 
 
@@ -309,7 +328,34 @@
     }, 200);  // Check setiap 200ms untuk respons lebih cepat
     }
 
-    function resetRound() {
+    function updateRoundUI(nextRound, winsCount) {
+      const roundHeader = document.getElementById('roundImage');
+      const roundOverlayImg = document.querySelector('#roundOverlay img');
+      const wonCounter = document.getElementById('wonCounter');
+
+      if (typeof nextRound === 'number') {
+        const roundSrcHeader = `static/assets/round${nextRound}${nextRound}.png`;
+        const roundSrcOverlay = `static/assets/round${nextRound}.png`;
+        if (roundHeader) roundHeader.src = roundSrcHeader;
+        if (roundOverlayImg) roundOverlayImg.src = roundSrcOverlay;
+      }
+
+      if (typeof winsCount === 'number' && wonCounter) {
+        wonCounter.src = `static/assets/won${winsCount}-3.png`;
+      }
+    }
+
+    function showRoundOverlayThenDetect() {
+      const roundOverlay = document.getElementById('roundOverlay');
+      if (roundOverlay) roundOverlay.style.display = 'flex';
+      audioManager.play('paperScroll');
+      setTimeout(() => {
+        if (roundOverlay) roundOverlay.style.display = 'none';
+        startHandDetection();
+      }, 2000);
+    }
+
+    function resetRound(nextRound, winsCount) {
       if (handDetectionInterval) clearInterval(handDetectionInterval);
       promptChanged = false;
       gameStarted = false;
@@ -321,6 +367,7 @@
       const countdown = document.getElementById('countdownOverlay');
       const resultOverlay = document.getElementById('resultOverlay');
       const failOverlay = document.getElementById('failOverlay');
+      const roundOverlay = document.getElementById('roundOverlay');
 
       if (promptOverlay) promptOverlay.style.display = 'flex';
       if (showHand) showHand.style.display = 'block';
@@ -328,11 +375,13 @@
       if (countdown) countdown.style.display = 'none';
       if (resultOverlay) resultOverlay.style.display = 'none';
       if (failOverlay) failOverlay.style.display = 'none';
-
-      startHandDetection();
+      if (roundOverlay) roundOverlay.style.display = 'none';
+      updateRoundUI(nextRound, winsCount);
+      showRoundOverlayThenDetect();
     }
 
-    startHandDetection();
+    // Tampilkan round dulu, lalu mulai deteksi tangan
+    showRoundOverlayThenDetect();
 
     function handleDetectionFail() {
       const overlay = document.getElementById('failOverlay');
@@ -489,10 +538,10 @@
             }  // Kembali ke menu utama
           } else if (result === 'SERI') {
             // Seri, ulangi round yang sama tanpa reload
-            resetRound();
+            resetRound(data.current_round, data.wins);
           } else {
-            // Lanjut ke round berikutnya
-            navigate('/round');
+            // Lanjut ke round berikutnya tanpa reload
+            resetRound(data.current_round, data.wins);
           }
         }, 2500);
 
@@ -500,11 +549,7 @@
         console.error('Error sending result:', error);
         // Fallback jika error
         setTimeout(() => {
-          if (result === 'SERI') {
-            resetRound();
-          } else {
-            navigate('/round');
-          }
+          resetRound();
         }, 2500);
       }
     }
