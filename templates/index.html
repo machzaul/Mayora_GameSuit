@@ -63,6 +63,10 @@
     // Enable audio and play click sound on tap
     document.body.addEventListener('click', function() {
       audioManager.enableAudio();
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'prewarm_camera' }, '*');
+      }
       
       setTimeout(() => {
         navigate('/loading');

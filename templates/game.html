@@ -136,6 +136,21 @@
     }
 
     /* RESULT OVERLAY */
+    .result-overlayy {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 300;
+    }
+
+    .result-imagee {
+      max-width: 50%;
+      height: auto;
+      animation: scalePop 0.8s ease;
+    }
     .result-overlay {
       position: fixed;
       inset: 0;
@@ -147,7 +162,7 @@
     }
 
     .result-image {
-      max-width: 50%;
+      max-width: 100%;
       height: auto;
       animation: scalePop 0.8s ease;
     }
@@ -203,9 +218,9 @@
       <img id="resultImage" class="result-image">
     </div>
     
-    <div class="result-overlay" id="failOverlay" style="display:none;">
+    <div class="result-overlayy" id="failOverlayy" style="display:none;">
       <img src="{{ url_for('static', filename='assets/Pop up.png') }}" 
-          class="result-image">
+          class="result-imagee">
     </div>
 
 
@@ -245,7 +260,10 @@
     fetch('/api/start-tracking', { method: 'POST' });
 
     // DETECT HAND → BE READY (dengan retry mechanism)
-    const handDetectionInterval = setInterval(async () => {
+    let handDetectionInterval = null;
+    function startHandDetection() {
+    if (handDetectionInterval) clearInterval(handDetectionInterval);
+    handDetectionInterval = setInterval(async () => {
 
     // 🚫 STOP kalau kamera belum siap
     if (!cameraReady) {
@@ -289,6 +307,32 @@
         }
 
     }, 200);  // Check setiap 200ms untuk respons lebih cepat
+    }
+
+    function resetRound() {
+      if (handDetectionInterval) clearInterval(handDetectionInterval);
+      promptChanged = false;
+      gameStarted = false;
+      userGesture = null;
+
+      const promptOverlay = document.querySelector('.prompt-overlay');
+      const showHand = document.getElementById('showHandPrompt');
+      const beReady = document.getElementById('beReadyPrompt');
+      const countdown = document.getElementById('countdownOverlay');
+      const resultOverlay = document.getElementById('resultOverlay');
+      const failOverlay = document.getElementById('failOverlay');
+
+      if (promptOverlay) promptOverlay.style.display = 'flex';
+      if (showHand) showHand.style.display = 'block';
+      if (beReady) beReady.style.display = 'none';
+      if (countdown) countdown.style.display = 'none';
+      if (resultOverlay) resultOverlay.style.display = 'none';
+      if (failOverlay) failOverlay.style.display = 'none';
+
+      startHandDetection();
+    }
+
+    startHandDetection();
 
     function handleDetectionFail() {
       const overlay = document.getElementById('failOverlay');
@@ -296,9 +340,9 @@
 
       audioManager.play('draw'); // atau sound khusus error
 
-      // balik otomatis ke halaman awal
+      // ulangi round tanpa reload
       setTimeout(() => {
-        location.reload();
+        resetRound();
       }, 2500);
     }
 
@@ -444,8 +488,8 @@
               navigate('/lose');
             }  // Kembali ke menu utama
           } else if (result === 'SERI') {
-            // Seri, ulangi round yang sama
-            location.reload();
+            // Seri, ulangi round yang sama tanpa reload
+            resetRound();
           } else {
             // Lanjut ke round berikutnya
             navigate('/round');
@@ -457,7 +501,7 @@
         // Fallback jika error
         setTimeout(() => {
           if (result === 'SERI') {
-            location.reload();
+            resetRound();
           } else {
             navigate('/round');
           }
