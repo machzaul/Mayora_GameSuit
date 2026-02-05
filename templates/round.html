@@ -6,18 +6,121 @@
   <title>Round - Fortune Hands</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+<style>
+  .round-content img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+
+}
+.round-anim-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* animasi utama */
+#roundAnim {
+  width: 100%;
+  height: auto;
+  display: block;
+  z-index: 1;
+}
+
+/* base awan */
+.cloud {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  transform: scale(0.4);
+}
+
+/* awan atas kanan */
+.cloud-top-right {
+  top: -3%;
+  right: -45%;
+  width: 100%;
+}
+
+/* awan bawah kiri */
+.cloud-bottom-left {
+  bottom: 10%;
+  left: -38%;
+  width: 100%;
+}
+
+</style>
 <body>
   <div class="round-container">
     <div class="round-overlay"></div>
     <div class="round-content">
-      <img src="{{ url_for('static', filename='assets/round' ~ round ~ '.png') }}" alt="Round {{ round }}" class="round-image">
+      <div class="round-anim-wrapper">
+
+        <!-- ANIMASI ROUND -->
+        <img id="roundAnim" alt="Round {{ round }}">
+
+        <!-- AWAN ATAS KANAN -->
+        <img
+          src="{{ url_for('static', filename='assets/cloud-top.png') }}"
+          class="cloud cloud-top-right"
+          alt="Cloud Top"
+        >
+
+        <!-- AWAN BAWAH KIRI -->
+        <img
+          src="{{ url_for('static', filename='assets/cloud-bottom.png') }}"
+          class="cloud cloud-bottom-left"
+          alt="Cloud Bottom"
+        >
+
+      </div>
     </div>
   </div>
 
   <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
-    // Play paper scroll sound when round page loads
     audioManager.play('paperScroll');
+
+    const round = {{ round | default(1) }};
+    const totalFrames = 60;        // 00000 - 00059
+    const frameRate = 24;          // fps
+    let currentFrame = 0;
+
+    const img = document.getElementById('roundAnim');
+
+    function pad(num) {
+      return num.toString().padStart(5, '0');
+    }
+
+    function getFramePath(frame) {
+      return `/static/assets/anim/Scroll/Scroll/Round ${round}/${round}_${pad(frame)}.png`;
+    }
+
+    function playRoundAnimation() {
+      const interval = setInterval(() => {
+        img.src = getFramePath(currentFrame);
+        currentFrame++;
+
+        if (currentFrame >= totalFrames) {
+          clearInterval(interval);
+
+          // tunggu sebentar biar animasi "napas"
+          setTimeout(() => {
+            navigate('/game');
+          }, 300);
+        }
+      }, 1000 / frameRate);
+    }
+
+    // PRELOAD BIAR HALUS
+    for (let i = 0; i < totalFrames; i++) {
+      const preload = new Image();
+      preload.src = getFramePath(i);
+    }
+
+    playRoundAnimation();
+
 
     function navigate(path) {
       if (window.parent && window.parent !== window) {
@@ -30,7 +133,7 @@
     // Auto-redirect to game after 2 seconds
     setTimeout(() => {
       navigate('/game');
-    }, 2000);
+    }, 100000);
   </script>
 </body>
 </html>

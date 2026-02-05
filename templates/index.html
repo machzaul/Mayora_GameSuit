@@ -14,6 +14,7 @@
     
     <main>
       <div class="circular-frame">
+        <img id="loaderSeq" alt="Loading animation">
       </div>
     </main>
     
@@ -24,6 +25,33 @@
 
   <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
+    const totalFrames = 140;
+    const frameRate = 24; // fps
+    const loaderImg = document.getElementById('loaderSeq');
+    const frames = [];
+
+    let currentFrame = 0;
+
+    function pad(number, length) {
+      return number.toString().padStart(length, '0');
+    }
+
+    function playLoader() {
+      setInterval(() => {
+        const framePath = `/static/assets/anim/Loader/Loader/Loader/Loader_${pad(currentFrame, 5)}.png`;
+        loaderImg.src = framePath;
+
+        currentFrame = (currentFrame + 1) % totalFrames;
+      }, 1000 / frameRate);
+    }
+    for (let i = 0; i < totalFrames; i++) {
+      const img = new Image();
+      img.src = `/static/assets/loader/loader/Loader_${pad(i, 5)}.png`;
+      frames.push(img);
+    }
+
+    playLoader();
+
     function navigate(path) {
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: 'nav', url: path }, '*');

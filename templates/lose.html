@@ -19,10 +19,15 @@
       />
 
       <!-- Icon Tengah (Lingkaran Tangan) -->
-      <img
+       <img
         src="{{ url_for('static', filename='assets/lose-icon.png') }}"
         class="win-icon"
         alt="Lose Icon"
+      />
+      <img
+        id="loseAnim"
+        class="win-icon"
+        alt="Lose Animation"
       />
 
       <!-- Button Collect -->
@@ -38,8 +43,37 @@
 
   <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
-    // Play so-close sound when page loads
+    // Play lose sound
     audioManager.play('soClose');
+
+    const totalFrames = 100;   // 00000 - 00099
+    const frameRate = 24;      // fps
+    let currentFrame = 0;
+
+    const img = document.getElementById('loseAnim');
+
+    function pad(num) {
+      return num.toString().padStart(5, '0');
+    }
+
+    function getFramePath(frame) {
+      return `/static/assets/anim/Lose/Lose/Lose_${pad(frame)}.png`;
+    }
+
+    function playLoseAnimation() {
+      setInterval(() => {
+        img.src = getFramePath(currentFrame);
+        currentFrame = (currentFrame + 1) % totalFrames; // LOOP
+      }, 1000 / frameRate);
+    }
+
+    // preload biar halus
+    for (let i = 0; i < totalFrames; i++) {
+      const preload = new Image();
+      preload.src = getFramePath(i);
+    }
+
+    playLoseAnimation();
 
     function navigate(path) {
       if (window.parent && window.parent !== window) {
@@ -55,5 +89,6 @@
       }, 200);
     }
   </script>
+
 </body>
 </html>

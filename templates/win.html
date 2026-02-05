@@ -19,10 +19,15 @@
       />
 
       <!-- Icon Tengah (Lingkaran Tangan) -->
-      <img
-        src="{{ url_for('static', filename='assets/win-icon.png') }}"
+       <img
+        src="{{ url_for('static', filename='assets/lose-icon.png') }}"
         class="win-icon"
-        alt="Win Icon"
+        alt="Lose Icon"
+      />
+      <img
+        id="winAnim"
+        class="win-icon"
+        alt="Win Animation"
       />
 
       <!-- Button Collect -->
@@ -38,8 +43,36 @@
 
   <script src="{{ url_for('static', filename='js/audio-bridge.js') }}"></script>
   <script>
-    // Play you-win sound when page loads
     audioManager.play('youWin');
+
+    const totalFrames = 100;   // 00000 - 00099
+    const frameRate = 24;      // fps
+    let currentFrame = 0;
+
+    const img = document.getElementById('winAnim');
+
+    function pad(num) {
+      return num.toString().padStart(5, '0');
+    }
+
+    function getFramePath(frame) {
+      return `/static/assets/anim/Win/Win/Win_${pad(frame)}.png`;
+    }
+
+    function playWinAnimation() {
+      setInterval(() => {
+        img.src = getFramePath(currentFrame);
+        currentFrame = (currentFrame + 1) % totalFrames; // LOOP
+      }, 1000 / frameRate);
+    }
+
+    // preload biar halus
+    for (let i = 0; i < totalFrames; i++) {
+      const preload = new Image();
+      preload.src = getFramePath(i);
+    }
+
+    playWinAnimation();
 
     function navigate(path) {
       if (window.parent && window.parent !== window) {
@@ -55,5 +88,6 @@
       }, 200);
     }
   </script>
+
 </body>
 </html>

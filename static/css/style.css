@@ -58,13 +58,20 @@ main {
 .circular-frame {
   width: 80%;
   height: 80%;
-  background: url('../assets/content-frame.png') no-repeat center center;
   background-size: contain;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
+.circular-frame img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 
 .placeholder-text {
   color: white;
@@ -361,7 +368,6 @@ footer {
   width: 55%;
   height: auto;
   z-index: 2;
-  animation: float 3s ease-in-out infinite;
 }
 
 /* Tombol Collect */

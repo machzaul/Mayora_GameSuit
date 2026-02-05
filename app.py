@@ -78,7 +78,7 @@ def detect_rps(hand_landmarks):
     # Deteksi gesture berdasarkan jumlah jari yang terangkat
     if fingers_up == 0:
         return "rock"
-    elif fingers_up == 2 and index_tip.y < index_pip.y and middle_tip.y < middle_pip.y:
+    elif fingers_up in [2, 3] and index_tip.y < index_pip.y and middle_tip.y < middle_pip.y:
         # Scissors: hanya telunjuk dan jari tengah terangkat
         return "scissors"
     elif fingers_up >= 4:
@@ -241,7 +241,7 @@ def game_result():
         wins += 1
         session['wins'] = wins
         
-        if wins >= 3:
+        if wins >= 2:
             return jsonify({
                 "status": "game_over",
                 "message": "SELAMAT! Anda menang 3 kali!",
@@ -252,7 +252,7 @@ def game_result():
         losses += 1
         session['losses'] = losses
         
-        if losses >= 3:
+        if losses >= 2:
             return jsonify({
                 "status": "game_over",
                 "message": "GAME OVER! Anda kalah 3 kali!",
