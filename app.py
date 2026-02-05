@@ -1,12 +1,40 @@
 from flask import Flask, render_template, jsonify, session, redirect, url_for, request
 import cv2
 import mediapipe as mp
+import serial
+import serial.tools.list_ports
 import numpy as np
 import time
 from collections import deque
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here-change-this'  # Ganti dengan secret key yang aman
+
+# ================= PENCARI COM =================
+def find_arduino_port():
+    ports = serial.tools.list_ports.comports()
+
+    for port in ports:
+        # Biasanya Arduino ada kata "Arduino" / "CH340" / "USB Serial"
+        if (
+            "Arduino" in port.description
+            or "CH340" in port.description
+            or "USB Serial" in port.description
+        ):
+            return port.device
+
+    return None
+
+# ================= ARDUINO SERVO =================
+arduino_port = find_arduino_port()
+
+if arduino_port is None:
+    print("Arduino tidak ditemukan!")
+    arduino = None
+else:
+    print(f"Arduino ditemukan di {arduino_port}")
+    arduino = serial.Serial(arduino_port, 9600, timeout=1)
+    time.sleep(2)  # tunggu Arduino siap
 
 # ================= MEDIA PIPE =================
 mp_hands = mp.solutions.hands
@@ -131,7 +159,6 @@ def process_hand_frame(frame):
     hand_detected = sum(detection_buffer) >= len(detection_buffer) // 2
 
     return frame
-
 
 # ================= VIDEO STREAM =================
 def generate_frames():
@@ -285,6 +312,17 @@ def win():
 def lose():
     """win page"""
     return render_screen('lose.html')
+
+@app.route('/api/servo/collect', methods=['POST'])
+def servo_collect():
+
+    if arduino is None:
+        return jsonify({"status": "arduino_not_found"})
+
+    arduino.write(b'O')
+    return jsonify({"status": "ok"})
+
+
 
 @app.route('/audio-player')
 def audio_player():

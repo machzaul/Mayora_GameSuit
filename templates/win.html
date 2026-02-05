@@ -83,9 +83,15 @@
     }
 
     function goHome() {
+      // 1. Trigger servo
+      fetch('/api/servo/collect', {
+        method: 'POST'
+      });
+
+      // 2. Pindah halaman
       setTimeout(() => {
         navigate('/screen/index');
-      }, 200);
+      }, 500);
     }
   </script>
 
