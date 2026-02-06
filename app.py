@@ -38,7 +38,6 @@ else:
 
 # ================= MEDIA PIPE =================
 mp_hands = mp.solutions.hands
-mp_drawing = mp.solutions.drawing_utils
 
 hands = mp_hands.Hands(
     static_image_mode=False,
@@ -145,11 +144,6 @@ def process_hand_frame(frame):
         else:
             hand_gesture = current_gesture
 
-        mp_drawing.draw_landmarks(
-            frame,
-            landmarks,
-            mp_hands.HAND_CONNECTIONS
-        )
     else:
         detection_buffer.append(False)
         gesture_buffer.clear()

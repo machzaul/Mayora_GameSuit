@@ -29,6 +29,7 @@
     const frameRate = 24; // fps
     const loaderImg = document.getElementById('loaderSeq');
     const frames = [];
+    const loaderBasePath = '/static/assets/anim/Loader/Loader/Loader';
 
     let currentFrame = 0;
 
@@ -38,7 +39,7 @@
 
     function playLoader() {
       setInterval(() => {
-        const framePath = `/static/assets/anim/Loader/Loader/Loader/Loader_${pad(currentFrame, 5)}.png`;
+        const framePath = `${loaderBasePath}/Loader_${pad(currentFrame, 5)}.png`;
         loaderImg.src = framePath;
 
         currentFrame = (currentFrame + 1) % totalFrames;
@@ -46,7 +47,7 @@
     }
     for (let i = 0; i < totalFrames; i++) {
       const img = new Image();
-      img.src = `/static/assets/loader/loader/Loader_${pad(i, 5)}.png`;
+      img.src = `${loaderBasePath}/Loader_${pad(i, 5)}.png`;
       frames.push(img);
     }
 
