@@ -28,7 +28,7 @@
     max-width: 80vmin;
     max-height: 80vmin;
 
-    background: url('static/assets/circular-frame.png') no-repeat center center;
+    background: url('static/assets/circulargamenohand.png') no-repeat center center;
     background-size: contain;
 
     display: flex;
@@ -36,6 +36,30 @@
     align-items: center;
 
     z-index: 5;
+    overflow: visible;
+    }
+    .cpu-anim {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+      z-index: 1;
+    }
+    .cpu-cloud {
+      position: absolute;
+      z-index: 2;
+      pointer-events: none;
+      transform: scale(0.4);
+    }
+    .cpu-cloud-top-right {
+      top: 0%;
+      right: -35%;
+      width: 100%;
+    }
+    .cpu-cloud-bottom-left {
+      bottom: 8%;
+      left: -38%;
+      width: 100%;
     }
 
 
@@ -178,11 +202,38 @@
       background-size: cover;
     }
 
+    .round-anim-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
 
+    #roundAnim {
+      width: 100%;
+      height: auto;
+      display: block;
+      z-index: 1;
+    }
 
+    .cloud {
+      position: absolute;
+      z-index: 3;
+      pointer-events: none;
+      transform: scale(0.4);
+    }
 
-    
-    
+    .cloud-top-right {
+      top: -3%;
+      right: -45%;
+      width: 100%;
+    }
+
+    .cloud-bottom-left {
+      bottom: 10%;
+      left: -38%;
+      width: 100%;
+    }
 </style>
 <body>
   <div class="container">
@@ -201,6 +252,17 @@
     </footer>
     
     <div class="circular-frame-game">
+        <img
+          src="{{ url_for('static', filename='assets/cloud-top.png') }}"
+          class="cpu-cloud cpu-cloud-top-right"
+          alt="Cloud Top"
+        >
+        <img
+          src="{{ url_for('static', filename='assets/cloud-bottom.png') }}"
+          class="cpu-cloud cpu-cloud-bottom-left"
+          alt="Cloud Bottom"
+        >
+        <img id="cpuAnim" class="cpu-anim" alt="">
       </div>
   </div>
     <div class="prompt-overlay">
@@ -238,8 +300,19 @@
 
     <!-- ROUND OVERLAY (gabungan round.html) -->
     <div class="result-overlay round-overlay" id="roundOverlay" style="display:flex;">
-      <img src="{{ url_for('static', filename='assets/round' ~ round ~ '.png') }}"
-           alt="Round {{ round }}" class="result-image">
+      <div class="round-anim-wrapper">
+        <img id="roundAnim" alt="Round {{ round }}">
+        <img
+          src="{{ url_for('static', filename='assets/cloud-top.png') }}"
+          class="cloud cloud-top-right"
+          alt="Cloud Top"
+        >
+        <img
+          src="{{ url_for('static', filename='assets/cloud-bottom.png') }}"
+          class="cloud cloud-bottom-left"
+          alt="Cloud Bottom"
+        >
+      </div>
     </div>
 
 
@@ -260,8 +333,19 @@
     let handDetectionAttempts = 0;
     const MAX_DETECTION_ATTEMPTS = 3;
     let cameraReady = false;
+    let currentRound = {{ round | default(1) }};
+    const totalFrames = 60;
+    const frameRate = 24;
+    let currentFrame = 0;
+    let roundAnimInterval = null;
+    const roundAnimImg = document.getElementById('roundAnim');
 
     const videoImg = document.getElementById('videoFeed');
+    const cpuFrame = document.querySelector('.circular-frame-game');
+    const cpuAnimImg = document.getElementById('cpuAnim');
+    const RPS_TOTAL_FRAMES = 150;
+    const RPS_FRAME_RATE = 30;
+    let cpuAnimInterval = null;
 
     videoImg.onload = () => {
         if (!cameraReady) {
@@ -328,16 +412,78 @@
     }, 200);  // Check setiap 200ms untuk respons lebih cepat
     }
 
+    function pad(num) {
+      return num.toString().padStart(5, '0');
+    }
+
+    function resetCpuFrameToNoHand() {
+      if (cpuAnimInterval) {
+        clearInterval(cpuAnimInterval);
+        cpuAnimInterval = null;
+      }
+      if (cpuAnimImg) {
+        cpuAnimImg.style.display = 'none';
+        cpuAnimImg.removeAttribute('src');
+      }
+      if (cpuFrame) {
+        cpuFrame.style.background = "url('static/assets/circulargamenohand.png') no-repeat center center";
+        cpuFrame.style.backgroundSize = 'contain';
+      }
+    }
+
+    function getRpsAnimConfig(gesture) {
+      const map = {
+        rock: { folder: 'Rock', prefix: 'Rock' },
+        paper: { folder: 'Paper', prefix: 'Paper' },
+        scissors: { folder: 'Scissor', prefix: 'Scissor' }
+      };
+      return map[gesture];
+    }
+
+    function getRpsFramePath(gesture, frame) {
+      const cfg = getRpsAnimConfig(gesture);
+      if (!cfg) return '';
+      return encodeURI(`/static/assets/anim/Rock Paper Scissor/${cfg.folder}/${cfg.prefix}_${pad(frame)}.png`);
+    }
+
+    function getFramePath(frame, roundNum) {
+      return `/static/assets/anim/Scroll/Scroll/Round ${roundNum}/${roundNum}_${pad(frame)}.png`;
+    }
+
+    function preloadRoundFrames(roundNum) {
+      for (let i = 0; i < totalFrames; i++) {
+        const preload = new Image();
+        preload.src = getFramePath(i, roundNum);
+      }
+    }
+
+    function playRoundAnimation(roundNum, onDone) {
+      if (roundAnimInterval) clearInterval(roundAnimInterval);
+      currentFrame = 0;
+      roundAnimInterval = setInterval(() => {
+        if (roundAnimImg) {
+          roundAnimImg.src = getFramePath(currentFrame, roundNum);
+        }
+        currentFrame++;
+
+        if (currentFrame >= totalFrames) {
+          clearInterval(roundAnimInterval);
+          roundAnimInterval = null;
+          setTimeout(() => {
+            if (onDone) onDone();
+          }, 300);
+        }
+      }, 1000 / frameRate);
+    }
+
     function updateRoundUI(nextRound, winsCount) {
       const roundHeader = document.getElementById('roundImage');
-      const roundOverlayImg = document.querySelector('#roundOverlay img');
       const wonCounter = document.getElementById('wonCounter');
 
       if (typeof nextRound === 'number') {
         const roundSrcHeader = `static/assets/round${nextRound}${nextRound}.png`;
-        const roundSrcOverlay = `static/assets/round${nextRound}.png`;
         if (roundHeader) roundHeader.src = roundSrcHeader;
-        if (roundOverlayImg) roundOverlayImg.src = roundSrcOverlay;
+        currentRound = nextRound;
       }
 
       if (typeof winsCount === 'number' && wonCounter) {
@@ -349,10 +495,11 @@
       const roundOverlay = document.getElementById('roundOverlay');
       if (roundOverlay) roundOverlay.style.display = 'flex';
       audioManager.play('paperScroll');
-      setTimeout(() => {
+      preloadRoundFrames(currentRound);
+      playRoundAnimation(currentRound, () => {
         if (roundOverlay) roundOverlay.style.display = 'none';
         startHandDetection();
-      }, 2000);
+      });
     }
 
     function resetRound(nextRound, winsCount) {
@@ -376,11 +523,13 @@
       if (resultOverlay) resultOverlay.style.display = 'none';
       if (failOverlay) failOverlay.style.display = 'none';
       if (roundOverlay) roundOverlay.style.display = 'none';
+      resetCpuFrameToNoHand();
       updateRoundUI(nextRound, winsCount);
       showRoundOverlayThenDetect();
     }
 
     // Tampilkan round dulu, lalu mulai deteksi tangan
+    resetCpuFrameToNoHand();
     showRoundOverlayThenDetect();
 
     function handleDetectionFail() {
@@ -447,28 +596,51 @@
 
 
     // CPU TURN
-    function startCpuTurn() {
+    async function startCpuTurn() {
     const choices = ['rock', 'paper', 'scissors'];
     const cpuGesture = choices[Math.floor(Math.random() * 3)];
 
     console.log('CPU gesture:', cpuGesture);
-    showCpuGesture(cpuGesture);
+    await showCpuGesture(cpuGesture);
     judge(userGesture, cpuGesture);
     }
 
 
     // SHOW CPU IMAGE
     function showCpuGesture(gesture) {
-    const frame = document.querySelector('.circular-frame-game');
+      return new Promise(resolve => {
+        const cfg = getRpsAnimConfig(gesture);
+        if (!cfg || !cpuFrame || !cpuAnimImg) {
+          resolve();
+          return;
+        }
 
-    const imgMap = {
-        rock: 'static/assets/rock.png',
-        paper: 'static/assets/paper.png',
-        scissors: 'static/assets/scissors.png'
-    };
+        if (cpuAnimInterval) {
+          clearInterval(cpuAnimInterval);
+          cpuAnimInterval = null;
+        }
 
-    frame.style.background = `url('${imgMap[gesture]}') no-repeat center`;
-    frame.style.backgroundSize = 'contain';
+        cpuFrame.style.background = 'none';
+        cpuAnimImg.style.display = 'block';
+
+        let frameIndex = 0;
+        const totalFrames = RPS_TOTAL_FRAMES;
+        const frameDuration = 1000 / RPS_FRAME_RATE;
+
+        cpuAnimImg.src = getRpsFramePath(gesture, frameIndex);
+        frameIndex++;
+
+        cpuAnimInterval = setInterval(() => {
+          if (frameIndex >= totalFrames) {
+            clearInterval(cpuAnimInterval);
+            cpuAnimInterval = null;
+            resolve();
+            return;
+          }
+          cpuAnimImg.src = getRpsFramePath(gesture, frameIndex);
+          frameIndex++;
+        }, frameDuration);
+      });
     }
 
 
