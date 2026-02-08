@@ -6,35 +6,140 @@ import serial.tools.list_ports
 import numpy as np
 import time
 from collections import deque
+import os
+import sys
+import re
 
-app = Flask(__name__)
+if getattr(sys, 'frozen', False):
+    base_path = sys._MEIPASS
+else:
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(base_path, 'templates'),
+    static_folder=os.path.join(base_path, 'static')
+)
 app.secret_key = 'your-secret-key-here-change-this'  # Ganti dengan secret key yang aman
 
 # ================= PENCARI COM =================
-def find_arduino_port():
-    ports = serial.tools.list_ports.comports()
+KNOWN_VID_PID = {
+    ("10C4", "EA60"),  # CP210x
+    ("1A86", "7523"),  # CH340
+    ("1A86", "55D4"),  # CH9102
+    ("303A", "1001"),  # Espressif USB JTAG/Serial
+    ("303A", "0002"),  # Espressif USB Serial
+    ("0403", "6001"),  # FTDI
+}
 
-    for port in ports:
-        # Biasanya Arduino ada kata "Arduino" / "CH340" / "USB Serial"
-        if (
-            "Arduino" in port.description
-            or "CH340" in port.description
-            or "USB Serial" in port.description
-        ):
-            return port.device
+PORT_KEYWORDS = (
+    "arduino",
+    "ch340",
+    "usb serial",
+    "cp210",
+    "silicon labs",
+    "uart",
+    "esp32",
+    "usb-serial",
+)
 
+
+def extract_vid_pid(hwid):
+    if not hwid:
+        return None
+    match = re.search(r"VID:PID=([0-9A-F]{4}):([0-9A-F]{4})", hwid, re.I)
+    if match:
+        return (match.group(1).upper(), match.group(2).upper())
+    match = re.search(r"VID_([0-9A-F]{4}).*PID_([0-9A-F]{4})", hwid, re.I)
+    if match:
+        return (match.group(1).upper(), match.group(2).upper())
     return None
 
-# ================= ARDUINO SERVO =================
-arduino_port = find_arduino_port()
 
-if arduino_port is None:
-    print("Arduino tidak ditemukan!")
-    arduino = None
-else:
-    print(f"Arduino ditemukan di {arduino_port}")
-    arduino = serial.Serial(arduino_port, 9600, timeout=1)
-    time.sleep(2)  # tunggu Arduino siap
+def list_ports_debug(ports):
+    for port in ports:
+        desc = port.description or ""
+        hwid = port.hwid or ""
+        print(f"- {port.device} | {desc} | {hwid}")
+
+
+def get_candidate_ports():
+    ports = list(serial.tools.list_ports.comports())
+
+    env_port = os.environ.get("ARDUINO_PORT") or os.environ.get("SERIAL_PORT")
+    if env_port:
+        for port in ports:
+            if port.device.lower() == env_port.lower():
+                return [port.device]
+        # Jika env diset tapi tidak terdeteksi, tetap coba pakai nilai env
+        return [env_port]
+
+    scored = []
+    for port in ports:
+        desc = (port.description or "").lower()
+        hwid = port.hwid or ""
+        score = 0
+
+        if any(keyword in desc for keyword in PORT_KEYWORDS):
+            score += 2
+
+        vid_pid = extract_vid_pid(hwid)
+        if vid_pid in KNOWN_VID_PID:
+            score += 3
+
+        if "bluetooth" in desc:
+            score -= 3
+
+        if score > 0:
+            scored.append((score, port.device))
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return [device for _, device in scored]
+
+
+def find_arduino_port():
+    candidates = get_candidate_ports()
+    if candidates:
+        return candidates[0]
+    return None
+
+
+# ================= ARDUINO SERVO =================
+arduino = None
+
+def init_serial():
+    global arduino
+
+    if arduino is not None and arduino.is_open:
+        return
+
+    candidates = get_candidate_ports()
+    if not candidates:
+        print("Arduino tidak ditemukan! Port tersedia:")
+        list_ports_debug(serial.tools.list_ports.comports())
+        return
+
+    last_error = None
+    for port in candidates:
+        try:
+            arduino = serial.Serial(port, 115200, timeout=1)
+            time.sleep(2)
+            print(f"Arduino ditemukan di {port}")
+            return
+        except Exception as e:
+            last_error = e
+            print(f"Gagal membuka serial {port}: {e}")
+            try:
+                if arduino is not None:
+                    arduino.close()
+            except Exception:
+                pass
+            arduino = None
+
+    print("Gagal membuka semua port kandidat.")
+    if last_error is not None:
+        print("Error terakhir:", last_error)
+
 
 # ================= MEDIA PIPE =================
 mp_hands = mp.solutions.hands
@@ -309,12 +414,17 @@ def lose():
 
 @app.route('/api/servo/collect', methods=['POST'])
 def servo_collect():
-
-    if arduino is None:
+    if arduino is None or not arduino.is_open:
+        init_serial()
+    if arduino is None or not arduino.is_open:
         return jsonify({"status": "arduino_not_found"})
 
-    arduino.write(b'O')
+    arduino.write(b'O\n')
+    arduino.flush()
+    print("Command O dikirim ke ESP32")
+
     return jsonify({"status": "ok"})
+
 
 
 
@@ -324,4 +434,8 @@ def audio_player():
     return render_template('audio_player.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Hindari double-open COM saat debug reloader aktif
+    enable_debug = True
+    if not enable_debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        init_serial()
+    app.run(debug=enable_debug, use_reloader=enable_debug)
