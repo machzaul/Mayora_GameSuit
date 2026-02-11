@@ -9,6 +9,8 @@ from collections import deque
 import os
 import sys
 import re
+from threading import Thread, Lock
+import webbrowser
 
 if getattr(sys, 'frozen', False):
     base_path = sys._MEIPASS
@@ -161,6 +163,98 @@ hand_gesture = "none"
 gesture_buffer = deque(maxlen=5)  # Simpan 5 frame terakhir
 detection_buffer = deque(maxlen=3)  # Simpan 3 frame untuk deteksi keberadaan tangan
 
+# ================= CAMERA MANAGER =================
+camera = None
+camera_thread = None
+camera_lock = Lock()
+frame_lock = Lock()
+latest_jpeg = None
+camera_running = False
+camera_clients = 0
+camera_clients_lock = Lock()
+
+
+def _open_camera():
+    backend = cv2.CAP_DSHOW if os.name == 'nt' and hasattr(cv2, 'CAP_DSHOW') else cv2.CAP_ANY
+    cap = cv2.VideoCapture(0, backend)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+    cap.set(cv2.CAP_PROP_FPS, 24)
+    # Kurangi buffer agar latency lebih rendah (jika didukung driver)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    return cap
+
+
+def _camera_loop():
+    global camera, latest_jpeg
+    target_fps = 24
+    frame_interval = 1.0 / target_fps
+
+    while True:
+        with camera_lock:
+            if not camera_running:
+                break
+
+        with camera_clients_lock:
+            active = camera_clients > 0
+
+        if not active:
+            if camera is not None:
+                camera.release()
+                camera = None
+            time.sleep(0.1)
+            continue
+
+        if camera is None or not camera.isOpened():
+            camera = _open_camera()
+            if camera is None or not camera.isOpened():
+                time.sleep(0.2)
+                continue
+
+        success, frame = camera.read()
+        if not success:
+            time.sleep(0.05)
+            continue
+
+        frame = cv2.flip(frame, 1)
+
+        if hand_tracking_active:
+            frame = process_hand_frame(frame)
+
+        ret, buffer = cv2.imencode('.jpg', frame)
+        if ret:
+            with frame_lock:
+                latest_jpeg = buffer.tobytes()
+
+        time.sleep(frame_interval)
+
+    if camera is not None:
+        camera.release()
+        camera = None
+
+
+def _ensure_camera_thread():
+    global camera_thread, camera_running
+    with camera_lock:
+        if camera_running:
+            return
+        camera_running = True
+        camera_thread = Thread(target=_camera_loop, daemon=True)
+        camera_thread.start()
+
+
+def _register_camera_client():
+    global camera_clients
+    with camera_clients_lock:
+        camera_clients += 1
+    _ensure_camera_thread()
+
+
+def _unregister_camera_client():
+    global camera_clients
+    with camera_clients_lock:
+        camera_clients = max(0, camera_clients - 1)
+
 
 # ================= RPS DETECTION (IMPROVED) =================
 def detect_rps(hand_landmarks):
@@ -261,28 +355,20 @@ def process_hand_frame(frame):
 
 # ================= VIDEO STREAM =================
 def generate_frames():
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-    cap.set(cv2.CAP_PROP_FPS, 24)
+    _register_camera_client()
+    try:
+        while True:
+            with frame_lock:
+                frame = latest_jpeg
+            if frame is None:
+                time.sleep(0.05)
+                continue
 
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
-
-        frame = cv2.flip(frame, 1)
-
-        if hand_tracking_active:
-            frame = process_hand_frame(frame)
-
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-    cap.release()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            time.sleep(1.0 / 24)
+    finally:
+        _unregister_camera_client()
 
 
 # ================= ROUTES =================
@@ -438,4 +524,11 @@ if __name__ == '__main__':
     enable_debug = True
     if not enable_debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         init_serial()
+        def _open_browser():
+            time.sleep(1)
+            try:
+                webbrowser.open_new("http://127.0.0.1:5000/")
+            except Exception as e:
+                print("Gagal membuka browser:", e)
+        Thread(target=_open_browser, daemon=True).start()
     app.run(debug=enable_debug, use_reloader=enable_debug)
