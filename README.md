@@ -38,3 +38,7 @@ Aplikasi berjalan sebagai server lokal berbasis Flask dan dibuka melalui browser
 ## Download
 - Link: https://drive.google.com/file/d/183N_KAxS_9mo7iutN9lerHFfrAJESYPf/view?usp=sharing
 - Jika diunduh lewat script otomatis, file akan tersimpan di folder `downloads`.
+
+## Download 2
+- Link: [https://drive.google.com/file/d/183N_KAxS_9mo7iutN9lerHFfrAJESYPf/view?usp=sharing](https://drive.google.com/file/d/1OnJDvB37xAUizqgkQTemfedDsNYksU3O/view?usp=sharing)
+- Jika diunduh lewat script otomatis, file akan tersimpan di folder `downloads`.
